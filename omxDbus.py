@@ -55,6 +55,8 @@ class Player(object):
                 break
             sleep(0.1)
         if counter < 10:
+            self.playPause()
+            print('position=%s' % self.position())
             return True
         else:
             return False
@@ -173,7 +175,6 @@ class Player(object):
             self.properties_interface.Unmute()
         except:
             return False
-
         return True
 
     def mute(self):
