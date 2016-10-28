@@ -7,21 +7,27 @@ import os
 import signal
 
 class Player(object):
-    def __init__(self, dbusNUM, filename, args=[], visible=False, paused=True, muted=True):
+    def __init__(self, dbusNUM, filename, args=None, visible=False, paused=True, muted=True):
         self.dbusNUM = dbusNUM
         self.filename = filename
-        self.args = args
+	if args is not None:
+	        self.args = args
+	else:
+	        self.args = []
         self.visible = visible
         self.paused = paused
         self.muted = muted
         if "--alpha" in self.args:
             self.visible = True
         else:
-            self.args.append(['--alpha', '0'])
-        if "--vol" in self.args:
+            self.args.extend(['--alpha', '0'])
+        if "--vol" in self.args or self.muted is False:
             self.muted = False
         else:
-            self.args.append(['--vol', '-6000'])
+            self.args.extend(['--vol', '-6000'])
+	self.args += ['--dbus_name', 'org.mpris.MediaPlayer2.omxplayer%s' % self.dbusNUM, '--no-osd']
+	print(self.args)
+
     def _get_dbus_interface(self):
         try:
             OMXPLAYER_DBUS_ADDR='/tmp/omxplayerdbus.pi'
@@ -45,6 +51,7 @@ class Player(object):
 
     def initialize(self):
         command = ['omxplayer'] + self.args + [self.filename]
+	print(command)
         with open(os.devnull, 'w') as devnull:
             self.omxplayer = subprocess.Popen(command, stdin=devnull, stdout=devnull, preexec_fn=os.setsid)
         sleep(0.1) # wait for omxplayer to appear on dbus
@@ -55,8 +62,8 @@ class Player(object):
                 break
             sleep(0.1)
         if counter < 10:
-            self.playPause()
-            print('position=%s' % self.position())
+	    if self.paused is True:
+            	self.playPause()
             return True
         else:
             return False
@@ -71,40 +78,41 @@ class Player(object):
     def playPause(self):
         try:
             self.player_interface.Action(16)
+            return True
         except:
             return False
 
-        return True
 
     def setPosition(self, seconds):
         try:
             self.player_interface.SetPosition(
                 dbus.ObjectPath('/not/used'),
                 long(seconds * 1000000))
+            return True
         except:
             return False
-
-        return True
 
     def setPositionFine(self, seconds):
         try:
             self.player_interface.SetPosition(
                 dbus.ObjectPath('/not/used'),
                 long(seconds))
+            return True
         except:
             return False
 
-        return True
 
     def setAlpha(self, alpha):
         try:
             self.player_interface.SetAlpha(
                 dbus.ObjectPath('/not/used'),
                 long(alpha))
+	    if alpha != 0:
+		    self.hidden = False
+            return True
         except:
             return False
 
-        return True
 
     def setVPosition(self, x1, y1, x2, y2):
         try:
@@ -112,10 +120,10 @@ class Player(object):
             self.player_interface.VideoPos(
                 dbus.ObjectPath('/not/used'),
                 str(position))
+            return True
         except:
             return False
 
-        return True
 
     def setVCrop(self, x1, y1, x2, y2):
         try:
@@ -123,74 +131,78 @@ class Player(object):
             self.player_interface.SetVideoCropPos(
                 dbus.ObjectPath('/not/used'),
                 str(crop))
+            return True
         except:
             return False
 
-        return True
 
     def hide(self):
         try:
             self.player_interface.Action(28)
+	    self.hidden = True
+            return True
         except:
             return False
 
-        return True
 
     def unhide(self):
         try:
             self.player_interface.Action(29)
+	    self.hidden = False
+            return True
         except:
             return False
 
-        return True
 
     def duration(self):
         try:
             Duration=self.properties_interface.Duration()
+            return Duration
         except:
             return False
 
-        return Duration
 
     def position(self):
         try:
             Position=self.properties_interface.Position()
+            return Position
         except:
             Position=False
 
-        return Position
 
     def dimensions(self):
         try:
             width=self.properties_interface.ResWidth()
             height=self.properties_interface.ResHeight()
             dimensions = "%s %s" % (str(width), str(height))
+            return dimensions
         except:
             return False
 
-        return dimensions
 
     def unmute(self):
         try:
             self.properties_interface.Unmute()
+            return True
         except:
             return False
-        return True
 
     def mute(self):
         try:
             self.properties_interface.Mute()
+            return True
         except:
             return False
 
-        return True
 
     def exit(self):
         omxStatus = None
         exitCount = 0
         while omxStatus is None and exitCount < 10:
             self.player_interface.Action(15)
+            sleep(0.1)
             omxStatus = self.omxplayer.poll()
+	    exitCount += 1
         if exitCount >= 10:
             try:
                 process_group_id = os.getpgid(self.omxplayer.pid)
