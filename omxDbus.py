@@ -10,10 +10,10 @@ class Player(object):
     def __init__(self, dbusNUM, filename, args=None, visible=False, paused=True, muted=True):
         self.dbusNUM = dbusNUM
         self.filename = filename
-	if args is not None:
-	        self.args = args
-	else:
-	        self.args = []
+        if args is not None:
+            self.args = args
+        else:
+            self.args = []
         self.visible = visible
         self.paused = paused
         self.muted = muted
@@ -25,8 +25,8 @@ class Player(object):
             self.muted = False
         else:
             self.args.extend(['--vol', '-6000'])
-	self.args += ['--dbus_name', 'org.mpris.MediaPlayer2.omxplayer%s' % self.dbusNUM, '--no-osd']
-	print(self.args)
+        self.args += ['--dbus_name', 'org.mpris.MediaPlayer2.omxplayer%s' % self.dbusNUM, '--no-osd']
+        print(self.args)
 
     def _get_dbus_interface(self):
         try:
@@ -51,7 +51,7 @@ class Player(object):
 
     def initialize(self):
         command = ['omxplayer'] + self.args + [self.filename]
-	print(command)
+        print(command)
         with open(os.devnull, 'w') as devnull:
             self.omxplayer = subprocess.Popen(command, stdin=devnull, stdout=devnull, preexec_fn=os.setsid)
         sleep(0.1) # wait for omxplayer to appear on dbus
@@ -62,8 +62,8 @@ class Player(object):
                 break
             sleep(0.1)
         if counter < 10:
-	    if self.paused is True:
-            	self.playPause()
+            if self.paused is True:
+                self.playPause()
             return True
         else:
             return False
@@ -107,8 +107,8 @@ class Player(object):
             self.player_interface.SetAlpha(
                 dbus.ObjectPath('/not/used'),
                 long(alpha))
-	    if alpha != 0:
-		    self.hidden = False
+            if alpha != 0:
+                self.hidden = False
             return True
         except:
             return False
@@ -139,7 +139,7 @@ class Player(object):
     def hide(self):
         try:
             self.player_interface.Action(28)
-	    self.hidden = True
+            self.hidden = True
             return True
         except:
             return False
@@ -148,7 +148,7 @@ class Player(object):
     def unhide(self):
         try:
             self.player_interface.Action(29)
-	    self.hidden = False
+            self.hidden = False
             return True
         except:
             return False
@@ -194,6 +194,11 @@ class Player(object):
         except:
             return False
 
+    def isAlive(self):
+        if self.omxplayer.poll() is None:
+            return True
+        else:
+            return False
 
     def exit(self):
         omxStatus = None
@@ -202,7 +207,7 @@ class Player(object):
             self.player_interface.Action(15)
             sleep(0.1)
             omxStatus = self.omxplayer.poll()
-	    exitCount += 1
+            exitCount += 1
         if exitCount >= 10:
             try:
                 process_group_id = os.getpgid(self.omxplayer.pid)
