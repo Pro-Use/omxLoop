@@ -10,23 +10,24 @@ class Player(object):
     def __init__(self, dbusNUM, filename, args=None, visible=False, paused=True, muted=True):
         self.dbusNUM = dbusNUM
         self.filename = filename
+	self.ARGS = []
         if args is not None:
-            self.args = args
-        else:
-            self.args = []
+            self.ARGS += args
+#        else:
+#            self.ARGS = []
         self.visible = visible
         self.paused = paused
         self.muted = muted
-        if "--alpha" in self.args:
+        if "--alpha" in self.ARGS:
             self.visible = True
         else:
-            self.args.extend(['--alpha', '0'])
-        if "--vol" in self.args or self.muted is False:
+            self.ARGS.extend(['--alpha', '0'])
+        if "--vol" in self.ARGS or self.muted is False:
             self.muted = False
         else:
-            self.args.extend(['--vol', '-6000'])
-        self.args += ['--dbus_name', 'org.mpris.MediaPlayer2.omxplayer%s' % self.dbusNUM, '--no-osd']
-        print(self.args)
+            self.ARGS.extend(['--vol', '-6000'])
+        self.ARGS += ['--dbus_name', 'org.mpris.MediaPlayer2.omxplayer%s' % self.dbusNUM, '--no-osd']
+        print(self.ARGS)
 
     def _get_dbus_interface(self):
         try:
@@ -50,7 +51,7 @@ class Player(object):
         return True
 
     def initialize(self):
-        command = ['omxplayer'] + self.args + [self.filename]
+        command = ['omxplayer'] + self.ARGS + [self.filename]
         print(command)
         with open(os.devnull, 'w') as devnull:
             self.omxplayer = subprocess.Popen(command, stdin=devnull, stdout=devnull, preexec_fn=os.setsid)
@@ -191,6 +192,14 @@ class Player(object):
         try:
             self.properties_interface.Mute()
             return True
+        except:
+            return False
+
+    def setVolume(self, volume):
+        try:
+            self.properties_interface.Volume(10**(volume/2000.0))
+	    self.muted = False
+	    return True
         except:
             return False
 
