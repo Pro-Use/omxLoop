@@ -15,32 +15,32 @@ class OMXcontrol(object):
         if loop is True:
             args += '--loop'
         if len(self.INSTANCES) == 0:
-            self.INSTANCES += Player(0, mediafile, args=args)
-            self.playerOne = self.INSTANCES[0]
-            self.playerOne.initialize()
+            self.player = Player(0, mediafile, args=args)
+            self.INSTANCES += self.player
+            self.INSTANCES[0].initialize()
             wait = float(future) - time.time()
             print('sleeping %s' % wait)
             if wait > 0:
                 sleep(wait)
-            self.playerOne.setAlpha(255)
-            self.playerOne.playPause()
-            volume = self.playerOne.setVolume(0)
+            self.INSTANCES[0].setAlpha(255)
+            self.INSTANCES[0].playPause()
+            volume = self.INSTANCES[0].setVolume(0)
             print('volume=%s' % volume)
         else:
-            dbusNUM = int(not self.playerOne.dbusNUM)
-            self.INSTANCES += Player(dbusNUM, mediafile, args=args)
-            self.playerTwo = self.INSTANCES[1]
-            self.playerTwo.initialize()
+            dbusNUM = int(not self.INSTANCES[0].dbusNUM)
+            self.player = Player(dbusNUM, mediafile, args=args)
+            self.INSTANCES += self.player
+            self.INSTANCES[1].initialize()
             wait = float(future) - time.time()
             print('sleeping %s' % wait)
             if wait > 0:
                 sleep(wait)
-            self.playerTwo.setAlpha(255)
-            self.playerTwo.playPause()
-            volume = self.playerTwo.setVolume(0)
+            self.INSTANCES[1].setAlpha(255)
+            self.INSTANCES[1].playPause()
+            volume = self.INSTANCES[1].setVolume(0)
             print('volume=%s' % volume)
-            if self.playerOne.isAlive() is True:
-                self.playerOne.exit()
+            if self.INSTANCES[0].isAlive() is True:
+                self.INSTANCES[0].exit()
             self.INSTANCES.pop(0)
 
     def stop(self, future):
