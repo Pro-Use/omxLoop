@@ -10,7 +10,7 @@ class Player(object):
     def __init__(self, dbusNUM, filename, args=None, visible=False, paused=True, muted=True):
         self.dbusNUM = dbusNUM
         self.filename = filename
-	self.ARGS = []
+        self.ARGS = []
         if args is not None:
             self.ARGS += args
 #        else:
@@ -168,7 +168,7 @@ class Player(object):
             Position=self.properties_interface.Position()
             return Position
         except:
-            Position=False
+            return False
 
 
     def dimensions(self):
@@ -198,8 +198,8 @@ class Player(object):
     def setVolume(self, volume):
         try:
             self.properties_interface.Volume(10**(volume/2000.0))
-	    self.muted = False
-	    return True
+            self.muted = False
+            return True
         except:
             return False
 
@@ -213,10 +213,12 @@ class Player(object):
         omxStatus = None
         exitCount = 0
         while omxStatus is None and exitCount < 10:
-            self.player_interface.Action(15)
-            sleep(0.1)
-            omxStatus = self.omxplayer.poll()
-            exitCount += 1
+            try:
+                self.player_interface.Action(15)
+                sleep(0.1)
+                exitCount += 1
+            except:
+                omxStatus = self.omxplayer.poll()
         if exitCount >= 10:
             try:
                 process_group_id = os.getpgid(self.omxplayer.pid)

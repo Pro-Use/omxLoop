@@ -7,30 +7,14 @@ import time
 
 class OMXcontrol(object):
     def __init__(self):
-        self.INSTANCES = []
+        self.INSTANCES = {}
 
-    def loadfile(self, mediafile, future=0, loop=True, args=None):
-        self.FILE = mediafile
-        self.FUTURE = future
-	self.ARGS = []
-	if args is not None:
-	    self.ARGS += args
-        if loop is True:
-            self.ARGS += ['--loop']
-        if len(self.INSTANCES) == 0:
-            self.player = Player(0, mediafile, args=self.ARGS)
-            self.start(0, future)
-        else:
-            dbusNUM = int(not self.INSTANCES[0].dbusNUM)
-            self.player = Player(dbusNUM, mediafile, args=self.ARGS)
-            self.start(1, future)
-            if self.INSTANCES[0].isAlive() is True:
-		sleep(0.2)
-                self.INSTANCES[0].exit()
-            self.INSTANCES.pop(0)
+    def __cleanup(self):
+            for instance in self.INSTANCES.keys():
+                if not self.INSTANCES[instance].isAlive():
+                    del self.INSTANCES[instance]
 
-    def start(self, playerNum, future):
-            self.INSTANCES += [self.player]
+    def __start(self, playerNum, future):
             self.INSTANCES[playerNum].initialize()
             wait = float(future) - time.time()
             print('sleeping %s' % wait)
@@ -42,12 +26,36 @@ class OMXcontrol(object):
             print('play = %s' % self.INSTANCES[playerNum].playPause())
             print('volume = %s' % self.INSTANCES[playerNum].setVolume(0))
 
+    def loadfile(self, mediafile, future=0, loop=True, args=None, replace=True):
+        ARGS = ['--vol', '-6000']
+        if args is not None:
+            ARGS += args
+        if loop is True:
+            ARGS += ['--loop']
+        self.__cleanup()
+        if len(self.INSTANCES) == 0:
+            dbusNUM = 0
+        else:
+            c = 0
+            while c in self.INSTANCES.keys():
+                c += 1
+            dbusNUM = c
+        player = Player(dbusNUM, mediafile, args=ARGS)
+        self.INSTANCES[dbusNUM] = player
+        self.__start(dbusNUM, future)
+        if replace is True:
+            sleep(0.2)
+            for instance in self.INSTANCES.keys():
+                if instance is not dbusNUM:
+                    self.INSTANCES[instance].exit()
+                    del self.INSTANCES[instance]
+        return self.INSTANCES.keys()
 
     def stop(self, future=0):
         wait = float(future) - time.time()
         print('sleeping %s' % wait)
         if wait > 0:
             sleep(wait)
-        for i in range(len(self.INSTANCES)):
-            self.INSTANCES[i].exit()
-        self.INSTANCES = []
+        for instance in self.INSTANCES.keys():
+            self.INSTANCES[instance].exit()
+            del self.INSTANCES[instance]
