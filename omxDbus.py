@@ -8,17 +8,19 @@ import signal
 
 class Player(object):
     def __init__(self, dbusNUM, filename, args=None, visible=False, paused=True, muted=True):
+        self.OMXPLAYER_DBUS_ADDR = '/tmp/omxplayerdbus.pi'
+        if not os.path.exists(self.OMXPLAYER_DBUS_ADDR):
+            with open(os.devnull, 'w') as devnull:
+                subprocess.call(['/usr/bin/omxplayer', '-v'], stdin=devnull, stdout=devnull)
         self.dbusNUM = dbusNUM
         self.filename = filename
         self.ARGS = []
         if args is not None:
             self.ARGS += args
-#        else:
-#            self.ARGS = []
         self.visible = visible
         self.paused = paused
         self.muted = muted
-        if "--alpha" in self.ARGS:
+        if "--alpha" in self.ARGS or visible is True:
             self.visible = True
         else:
             self.ARGS.extend(['--alpha', '0'])
@@ -31,9 +33,8 @@ class Player(object):
 
     def _get_dbus_interface(self):
         try:
-            OMXPLAYER_DBUS_ADDR='/tmp/omxplayerdbus.pi'
             bus = dbus.bus.BusConnection(
-                open(OMXPLAYER_DBUS_ADDR).readlines()[0].rstrip())
+                open(self.OMXPLAYER_DBUS_ADDR).readlines()[0].rstrip())
             proxy = bus.get_object(
                 'org.mpris.MediaPlayer2.omxplayer'+str(self.dbusNUM),
                 '/org/mpris/MediaPlayer2',
@@ -42,16 +43,14 @@ class Player(object):
                 proxy, 'org.mpris.MediaPlayer2.Player')
             self.properties_interface = dbus.Interface(
                 proxy, 'org.freedesktop.DBus.Properties')
-
+            return True
         except Exception, e:
             print "WARNING: dbus connection could not be established"
             print e
             return False
 
-        return True
-
     def initialize(self):
-        command = ['omxplayer'] + self.ARGS + [self.filename]
+        command = ['/usr/bin/omxplayer'] + self.ARGS + [self.filename]
         print(command)
         with open(os.devnull, 'w') as devnull:
             self.omxplayer = subprocess.Popen(command, stdin=devnull, stdout=devnull, preexec_fn=os.setsid)
@@ -76,13 +75,13 @@ class Player(object):
             return False
 
         return True
+
     def playPause(self):
         try:
             self.player_interface.Action(16)
             return True
         except:
             return False
-
 
     def setPosition(self, seconds):
         try:
@@ -102,7 +101,6 @@ class Player(object):
         except:
             return False
 
-
     def setAlpha(self, alpha):
         try:
             self.player_interface.SetAlpha(
@@ -114,7 +112,6 @@ class Player(object):
         except:
             return False
 
-
     def setVPosition(self, x1, y1, x2, y2):
         try:
             position = "%s %s %s %s" % (str(x1),str(y1),str(x2),str(y2))
@@ -124,7 +121,6 @@ class Player(object):
             return True
         except:
             return False
-
 
     def setVCrop(self, x1, y1, x2, y2):
         try:
@@ -136,6 +132,17 @@ class Player(object):
         except:
             return False
 
+    def listVideo(self):
+        try:
+            return self.player_interface.ListVideo()
+        except:
+            return False
+
+    def listAudio(self):
+        try:
+            return self.player_interface.ListAudio()
+        except:
+            return False
 
     def hide(self):
         try:
@@ -145,7 +152,6 @@ class Player(object):
         except:
             return False
 
-
     def unhide(self):
         try:
             self.player_interface.Action(29)
@@ -154,14 +160,12 @@ class Player(object):
         except:
             return False
 
-
     def duration(self):
         try:
             Duration=self.properties_interface.Duration()
             return Duration
         except:
             return False
-
 
     def position(self):
         try:
@@ -170,16 +174,14 @@ class Player(object):
         except:
             return False
 
-
     def dimensions(self):
         try:
-            width=self.properties_interface.ResWidth()
-            height=self.properties_interface.ResHeight()
-            dimensions = "%s %s" % (str(width), str(height))
+            width = self.properties_interface.ResWidth()
+            height = self.properties_interface.ResHeight()
+            dimensions = [int(width), int(height)]
             return dimensions
         except:
             return False
-
 
     def unmute(self):
         try:
@@ -200,6 +202,12 @@ class Player(object):
             self.properties_interface.Volume(10**(volume/2000.0))
             self.muted = False
             return True
+        except:
+            return False
+
+    def videoStreamCount(self):
+        try:
+            return int(self.properties_interface.VideoStreamCount())
         except:
             return False
 
