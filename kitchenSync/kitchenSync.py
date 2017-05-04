@@ -76,7 +76,7 @@ class run():
             action = cmd[0]
             if action == 'stop':
                 self.current = self.stopAll(future=cmd[1])
-            elif GPIOTYPE in action:
+            elif GPIOTYPE in action and len(cmd) == 3:
                 future = cmd[2]
                 type, channel = action.split('_')
                 state = cmd[1]
@@ -89,11 +89,11 @@ class run():
                         pins = []
                 wait = float(future) - time.time()
                 if state in ("on", 'off'):
-                    c = Timer(wait, self.gpio(state, pins))
+                    c = Timer(wait, self.gpio, args=[state, pins])
                     c.start()
                 else:
                     print("%s is not a valid state" % state)
-            elif action in ACTIONS:
+            elif action in ACTIONS and len(cmd) == 3:
                 future = cmd[2]
                 if action == 'playLoop':
                     type = 'loop'
@@ -102,7 +102,7 @@ class run():
                 file = cmd[1]
                 self.current = self.start(file, future, type)
             else:
-                print str(action) + " is not a valid command, please choose playLoop, playSingle, or stop"
+                print("%s is not a valid command" % data)
             print 'current=' + self.current
 
         GPIO.cleanup()
