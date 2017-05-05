@@ -229,8 +229,10 @@ class Player(object):
                 omxStatus = self.omxplayer.poll()
         if exitCount >= 10:
             try:
-                process_group_id = os.getpgid(self.omxplayer.pid)
-                os.killpg(process_group_id, signal.SIGTERM)
+                print('cannot stop omxplayer via dBus, killing pid')
+                # process_group_id = os.getpgid(self.omxplayer.pid)
+                # os.killpg(process_group_id, signal.SIGTERM)
+                os.kill(self.omxplayer.pid, signal.SIGTERM)
             except OSError:
                 print('Could not find the process to kill')
 
