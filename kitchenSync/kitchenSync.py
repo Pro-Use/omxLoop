@@ -105,8 +105,11 @@ class run():
                 print("%s is not a valid command" % data)
             print 'current=' + self.current
 
+        self.current = self.stopAll()
         GPIO.cleanup()
+        UDPSock.shutdown()
         UDPSock.close()
+        sleep(1)
         os._exit(0)
 
 
