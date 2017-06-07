@@ -205,13 +205,6 @@ class Player(object):
         except:
             return False
 
-    def setRate(self, rate):
-        try:
-            self.properties_interface.Rate(rate)
-            return True
-        except:
-            return False
-
     def videoStreamCount(self):
         try:
             return int(self.properties_interface.VideoStreamCount())
